@@ -1,0 +1,43 @@
+# 可选：把 demo 升级成「生产形态」基础设施。
+# 不跑这个 compose 也能完整运行（默认 SQLite + 进程内缓存）。
+#
+#   docker compose up -d
+#   pip install "psycopg[binary]"
+#   $env:DATABASE_URL="postgresql+psycopg://adflow:adflow@localhost:5432/adflow"
+#   $env:REDIS_URL="redis://localhost:6379/0"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: adflow-postgres
+    environment:
+      POSTGRES_USER: adflow
+      POSTGRES_PASSWORD: adflow
+      POSTGRES_DB: adflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - adflow-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U adflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: adflow-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - adflow-redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  adflow-pgdata:
+  adflow-redisdata:
